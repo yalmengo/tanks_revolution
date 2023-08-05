@@ -6,7 +6,7 @@ public class CameraControl : MonoBehaviour
     public float m_ScreenEdgeBuffer = 4f; //Pequeño padding para que los tanques no se pegen a los bordes
     public float m_MinSize = 6.5f; //Tamaño mínimo de zoom
 
-    /*[HideInInspector]*/public Transform[] m_Targets; //Array de tanques, nose mostrarán en el inspector cuando haya Game Manager
+    [HideInInspector] public Transform[] m_Targets; //Array de tanques, nose mostrarán en el inspector cuando haya Game Manager
     private Camera m_Camera; //la cámara
     private float m_ZoomSpeed; //velocidad de zoom
     private Vector3 m_MoveVelocity; //velocidad de movimiento
