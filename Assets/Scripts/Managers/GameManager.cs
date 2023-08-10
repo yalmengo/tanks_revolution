@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     public float m_EndDelay = 3f; //Delay entre las fases de RoundPlaying y R oundEnding
     public CameraControl m_CameraControl; //Referencia al sccript de CameraControl
     public TMP_Text m_MessageText; //Referencia al texto para mostrar mensajes
+    public TMP_Text m_TimeText; //Referencia al texto para mostrar mensajes
 
     public GameObject m_TankPrefab; //Referencia al Prefab del Tanque
     public TankManager[] m_Tanks; //Array de TankManagers para controlar cada tanque
@@ -19,6 +20,9 @@ public class GameManager : MonoBehaviour
     private WaitForSeconds m_EndWait; //Delay hasta que la ronda acaba
     private TankManager m_RoundWinner; //Referencia al ganador de la ronda para anunciar quién ha ganado
     private TankManager m_GameWinner; //Referencia al ganador del juego para anunciar quién ha ganado
+    private float m_GameTimeInSeconds; // Tiempo jugado
+    private float m_RoundTimeInSeconds; // Tiempo de ronda
+    private float m_RoundTimeLimit = 60f; // Limite de tiempo
 
     private void Start()
     {
@@ -64,6 +68,8 @@ public class GameManager : MonoBehaviour
     //llamado al principio y en cada fase del juego después de otra
     private IEnumerator GameLoop()
     {
+        // Reiniciar temporizador
+        m_GameTimeInSeconds = 0f;
         //Empiezo con la corutina RoundStarting y no retorno hasta que finalice
         yield return StartCoroutine(RoundStarting());
         //Cuando finalice RoundStarting, empiezo con RoundPlaying y no retornohasta que finalice
@@ -86,6 +92,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator RoundStarting()
     {
+        // Reinicio tiempo;
+        m_RoundTimeInSeconds = 0f;
         // Cuando empiece la ronda reseteo los tanques e impido que se muevan.
         ResetAllTanks();
         DisableTankControl();
@@ -104,12 +112,26 @@ public class GameManager : MonoBehaviour
         EnableTankControl();
         // Borro el texto de la pantalla.
         m_MessageText.text = string.Empty;
-        // Mientras haya más de un tanque...
-        while (!OneTankLeft())
+        // Mientras haya más de un tanque y haya tiempo
+        while (!OneTankLeft() && m_RoundTimeInSeconds <= m_RoundTimeLimit)
         {
-            // ... vuelvo al frame siguiente.
+            // ... vuelvo al frame siguiente e incremento tiempo
+             m_RoundTimeInSeconds += Time.deltaTime;
+             m_TimeText.text = "Tiempo: " + m_RoundTimeInSeconds.ToString("f2"); 
             yield return null;
         }
+        
+         // Si no hay tiempo ambos pierden
+        if (m_RoundTimeInSeconds > m_RoundTimeLimit)
+        {
+            Debug.Log("Game over for both");
+            for (int i = 0; i < m_Tanks.Length; i++) {
+                m_Tanks[i].m_Instance.SetActive(false);
+            }
+        }
+
+        // Incrementar game time
+        m_GameTimeInSeconds += m_RoundTimeInSeconds;
     }
 
     private IEnumerator RoundEnding()
@@ -179,11 +201,11 @@ public class GameManager : MonoBehaviour
     // Deveulve el texto del mensaje a mostrar al final de cada ronda.
     private string EndMessage()
     {
-        // Pordefecto no hya ganadores, así que es empate.
+        // Por defecto no hay ganadores, así que es empate.
         string message = "EMPATE!";
         // Si hay un ganador de ronda cambio el mensaje.
         if (m_RoundWinner != null)
-            message = m_RoundWinner.m_ColoredPlayerText + " GANA LA RONDA!";
+            message = m_RoundWinner.m_ColoredPlayerText + " GANA LA RONDA EN " +  m_RoundTimeInSeconds.ToString("f2") + " SEGUNDOS!";
         // Retornos de carro.
         message += "\n\n\n\n";
         // Recorro los tanques y añado sus puntuaciones.
@@ -193,7 +215,7 @@ public class GameManager : MonoBehaviour
         }
         // Si hay un ganador del juego, cambio el mensaje entero para reflejarlo.
         if (m_GameWinner != null)
-            message = m_GameWinner.m_ColoredPlayerText + " GANA EL JUEGO!";
+            message = m_GameWinner.m_ColoredPlayerText + " GANA EL JUEGO EN" +  m_GameTimeInSeconds.ToString("f2") + " SEGUNDOS!";
         return message;
     }
 
